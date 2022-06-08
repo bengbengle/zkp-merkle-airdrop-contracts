@@ -11,6 +11,7 @@ export interface MerkleTreeAndSource {
 }
 
 /**
+ * 从 随机大小的叶子数 生成默克尔树
  * Generates a Merkle Tree from random leaves of size @param numLeaves.
  */
 export function generateMerkleTreeAndKeys(numLeaves: number): MerkleTreeAndSource {

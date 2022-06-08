@@ -10,10 +10,10 @@ interface IERC20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
 }
 
-/// @title An example airdrop contract utilizing a zk-proof of MerkleTree inclusion.
+/// @title 使用 MerkleTree 包含的 zk-proof 的示例空投合约。
 contract PrivateAirdrop is Ownable {
-    IERC20 public airdropToken;
-    uint public amountPerRedemption;
+    IERC20 public airdropToken; // 空投哪种代币
+    uint public amountPerRedemption; // 每次赎回金额
     IPlonkVerifier verifier;
 
     bytes32 public root;
@@ -34,10 +34,11 @@ contract PrivateAirdrop is Ownable {
         root = _root;
     }
 
-    /// @notice verifies the proof, collects the airdrop if valid, and prevents this proof from working again.
+    /// @notice 验证证明，如果有效则收集空投，并阻止此证明再次工作。
     function collectAirdrop(bytes calldata proof, bytes32 nullifierHash) public {
+        // 无效符不在该字段内
         require(uint256(nullifierHash) < SNARK_FIELD ,"Nullifier is not within the field");
-        require(!nullifierSpent[nullifierHash], "Airdrop already redeemed");
+        require(!nullifierSpent[nullifierHash], "Airdrop already redeemed"); // 空投已兑换
 
         uint[] memory pubSignals = new uint[](3);
         pubSignals[0] = uint256(root);
@@ -49,8 +50,8 @@ contract PrivateAirdrop is Ownable {
         airdropToken.transfer(msg.sender, amountPerRedemption);
     }
 
-    /// @notice Allows the owner to update the root of the merkle tree.
-    /// @dev Function can be removed to make the merkle tree immutable. If removed, the ownable extension can also be removed for gas savings.
+   /// @notice 允许所有者 更新默克尔树的根。 
+   /// @dev 可以移除 函数以使默克尔树不可变。如果删除，也可以删除可拥有的扩展程序以节省气体。
     function updateRoot(bytes32 newRoot) public onlyOwner {
         root = newRoot;
     }

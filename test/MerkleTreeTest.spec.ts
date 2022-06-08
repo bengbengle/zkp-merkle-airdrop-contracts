@@ -3,6 +3,7 @@ import { MerkleTree } from "zkp-merkle-airdrop-lib";
 import { generateMerkleTreeAndKeys } from "../utils/TestUtils";
 
 describe("MerkleTree", () => {
+    // 可以构造和销毁
     it("can be constructed and destructed", () => {
         let mtk = generateMerkleTreeAndKeys(2**6);
 

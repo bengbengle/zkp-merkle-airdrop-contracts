@@ -9,6 +9,7 @@ import { toHex } from "zkp-merkle-airdrop-lib";
 /**
  * Deploys a test set of contracts: ERC20, Verifier, PrivateAirdrop and transfers some ERC20 to the
  * PrivateAirdrop contract.
+ * 部署一组测试合约：ERC20、验证者、PrivateAirdrop 并将部分 ERC20 转移到 PrivateAirdrop 合约。
  */
 async function main() {
     // PARAMS
@@ -46,6 +47,7 @@ async function main() {
     console.log(`PrivateAirdrop contract address: ${privateAirdrop.address}`);
 
     // Transfer ERC20s to contract
+    // 将 ERC20 转入合约
     await erc20.transfer(privateAirdrop.address, NUM_ERC20_TO_DISTRIBUTE);
 }
 

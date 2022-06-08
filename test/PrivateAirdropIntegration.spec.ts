@@ -9,9 +9,11 @@ import { readFileSync } from "fs";
 import { MerkleTree, generateProofCallData, pedersenHashConcat, pedersenHash, toHex } from "zkp-merkle-airdrop-lib";
 import { randomBigInt, readMerkleTreeAndSourceFromFile } from "../utils/TestUtils";
 
-// Test constants
+// ERC20 总量
 let ERC20_SUPPLY = 100_000;
+// 要 分发 ERC20 的数量 
 let NUM_ERC20_TO_DISTRIBUTE = 80_000;
+// 每次赎回 ERC20 的 数量
 let NUM_ERC20_PER_REDEMPTION = 10_000;
 
 let WASM_PATH = "./build/circuit_js/circuit.wasm";
@@ -20,7 +22,7 @@ let ZKEY_PATH = "./build/circuit_final.zkey";
 let WASM_BUFF = readFileSync(WASM_PATH);
 let ZKEY_BUFF = readFileSync(ZKEY_PATH);
 describe("PrivateAirdrop", async () => {
-    // Load existing Merkle Tree from file to speed tests
+    // 从文件加载现有的 Merkle 树以加速测试
     let merkleTreeAndSource = readMerkleTreeAndSourceFromFile("./test/temp/mt_keys_8192.csv");
     it("collects an airdrop, mixed", async () => {
         // Deploy contracts
@@ -32,7 +34,7 @@ describe("PrivateAirdrop", async () => {
                 erc20SupplyHolder.address, 
                 hexRoot);
 
-        // Transfer airdroppable tokens to contract
+        // 将可空投代币转移到合约
         await erc20.connect(erc20SupplyHolder).transfer(airdrop.address, NUM_ERC20_TO_DISTRIBUTE);
         let contractBalanceInit: BigNumber = await erc20.balanceOf(airdrop.address);
         expect(contractBalanceInit.toNumber()).to.be.eq(NUM_ERC20_TO_DISTRIBUTE);
@@ -49,7 +51,9 @@ describe("PrivateAirdrop", async () => {
         let keyHash = toHex(pedersenHash(key))
 
         let execute = await (
-            await airdrop.connect(redeemer).collectAirdrop(callData, keyHash)).wait()
+                await airdrop.connect(redeemer).collectAirdrop(callData, keyHash)
+            ).wait()
+
         expect(execute.status).to.be.eq(1)
         let contractBalanceUpdated: BigNumber = await erc20.balanceOf(airdrop.address);
         expect(contractBalanceUpdated.toNumber()).to.be.eq(contractBalanceInit.toNumber() - NUM_ERC20_PER_REDEMPTION)
@@ -58,6 +62,7 @@ describe("PrivateAirdrop", async () => {
 
     })
 
+    // 不能利用大于标量字段的公共输入
     it("cannot exploit using public inputs larger than the scalar field", async () => {
         // Deploy contracts
         let hexRoot = toHex(merkleTreeAndSource.merkleTree.root.val)
@@ -96,6 +101,7 @@ describe("PrivateAirdrop", async () => {
 
     })
 
+    // 不能被另一方抢先
     it("cannot be front-run by another party", async () => {
         let hexRoot = toHex(merkleTreeAndSource.merkleTree.root.val)
 
@@ -131,6 +137,7 @@ describe("PrivateAirdrop", async () => {
         expect(frontrunnerBalance.toNumber()).to.be.eq(0)
     })
 
+    // 可以更新
     it("can be updated", async () => {
         let initHexRoot = toHex(merkleTreeAndSource.merkleTree.root.val);
 
@@ -150,24 +157,29 @@ describe("PrivateAirdrop", async () => {
                 erc20SupplyHolder.address, 
                 initHexRoot);
 
-        // Transfer airdroppable tokens to contract
+        // 将可空投代币转移到合约
         await erc20.connect(erc20SupplyHolder).transfer(airdrop.address, NUM_ERC20_TO_DISTRIBUTE);
         let contractBalanceInit: BigNumber = await erc20.balanceOf(airdrop.address);
         expect(contractBalanceInit.toNumber()).to.be.eq(NUM_ERC20_TO_DISTRIBUTE);
 
-        // Redeem 1
+        // 释放 1
         let merkleTree = merkleTreeAndSource.merkleTree
         let redeemIndex = 222;
         let nullifier = merkleTreeAndSource.leafNullifiers[redeemIndex];
         let secret = merkleTreeAndSource.leafSecrets[redeemIndex];
+        
+        // proof
         let callData = await generateProofCallData(merkleTree, nullifier, secret, redeemer.address, WASM_BUFF, ZKEY_BUFF);
+
+        // 哈希
         let nullifierHash = toHex(pedersenHash(nullifier))
         await expect(airdrop.connect(redeemer).collectAirdrop(callData, nullifierHash))
 
         // Check onlyOwner for addLeaf
+        // 检查 addLeaf 的所有者
         await expect(
-            airdrop.connect(redeemer)
-                .updateRoot(toHex(randomBigInt(32)))).to.be.revertedWith("Ownable: caller is not the owner")
+                airdrop.connect(redeemer).updateRoot(toHex(randomBigInt(32)))
+            ).to.be.revertedWith("Ownable: caller is not the owner")
 
         // Call addLeaf
         let newIndex = 555;
@@ -181,6 +193,7 @@ describe("PrivateAirdrop", async () => {
         await airdrop.connect(universalOwnerSigner).updateRoot(toHex(newMerkleTree.root.val));
 
         // Redeem at the new leaf
+        // 在 新的 leaf 赎回
         expect(newMerkleTree.root).to.be.not.eq(initHexRoot);
         let secondProof = 
             await generateProofCallData(newMerkleTree, newNullifier, newSecret, redeemer.address, WASM_BUFF, ZKEY_BUFF);

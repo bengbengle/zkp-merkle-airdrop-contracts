@@ -5,6 +5,7 @@ import { readMerkleTreeAndSourceFromFile, saveMerkleTree } from "../utils/TestUt
 
 /**
  * Generate a proof from a key, secret and locally stored merkleTree.
+ * 从密钥、秘密和本地存储的 merkleTree 生成证明
  */
 
 let WASM_PATH = "./build/circuit_js/circuit.wasm";
